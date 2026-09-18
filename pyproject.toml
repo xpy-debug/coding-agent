@@ -1,5 +1,5 @@
 [project]
-name = "pi-monorepo"
+name = "coding-monorepo"
 version = "0.1.0"
 description = "AI agent tooling monorepo"
 requires-python = ">=3.14"
@@ -9,24 +9,7 @@ license = "MIT"
 package = false
 
 [tool.uv.workspace]
-members = [
-    "packages/pi-ai",
-    "packages/pi-agent",
-    "packages/pi-tui",
-    "packages/pi-coding-agent",
-    "packages/pi-web-ui",
-    "packages/pi-mom",
-    "packages/pi-pods",
-]
-
-[tool.uv.sources]
-pi-ai = { workspace = true }
-pi-agent = { workspace = true }
-pi-tui = { workspace = true }
-pi-coding-agent = { workspace = true }
-pi-web-ui = { workspace = true }
-pi-mom = { workspace = true }
-pi-pods = { workspace = true }
+members = ["packages/coding"]
 
 [dependency-groups]
 dev = [

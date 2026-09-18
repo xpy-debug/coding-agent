@@ -1,0 +1,11 @@
+# Working trees and caches produced by the runner.
+.work/
+.cache/
+logs/
+
+# Generated artefacts.
+instances.json
+predictions.jsonl
+
+# Local overrides.
+.env

@@ -1,83 +1,98 @@
-# pi
+# coding
 
-A modular AI agent toolkit written in Python. Ships as a `uv` workspace with independent packages that compose together -- from raw LLM streaming through stateful agent loops to full terminal and web interfaces.
+An AI coding agent written in Python: provider-agnostic LLM streaming, a stateful
+agent loop with file and shell tools, a CLI, and a browser UI.
 
-The original project here at: https://github.com/badlogic/pi-mono
+Restructured from the original project at https://github.com/badlogic/pi-mono.
 
-## Packages
+## Layout
 
-| Package | What it does |
-|---------|-------------|
-| [pi-ai](packages/pi-ai/) | Unified LLM streaming across 9 provider backends (Anthropic, OpenAI, Google, Bedrock, and more). Swap models without changing application code. |
-| [pi-agent](packages/pi-agent/) | Stateful agent loop with tool execution, mid-run steering, and follow-up message processing. |
-| [pi-tui](packages/pi-tui/) | Terminal UI with differential rendering, keyboard input parsing, components (editor, markdown, select list), and overlay support. |
-| [pi-coding-agent](packages/pi-coding-agent/) | CLI coding assistant with file tools (bash, read, write, edit, grep), session persistence, context compaction, and extensions. |
-| [pi-mom](packages/pi-mom/) | Slack bot that runs tools inside Docker containers for safe code execution. |
-| [pi-web-ui](packages/pi-web-ui/) | Browser-based chat UI over FastAPI and WebSockets with SQLite-backed sessions. |
-| [pi-pods](packages/pi-pods/) | GPU pod manager for self-hosted vLLM deployments. |
+A single package, `packages/coding`, published as a `uv` workspace member.
 
-## Architecture
+| Module | What it does |
+|--------|--------------|
+| `coding.ai` | LLM streaming over OpenAI-compatible APIs, plus vendor presets and environment key lookup |
+| `coding.agent` | Stateful agent loop: tool execution, mid-run steering, follow-up messages |
+| `coding.core` | Coding agent: tools, sessions, context compaction, extensions, settings, tool approval |
+| `coding.web` | FastAPI + WebSocket UI with SQLite-backed sessions |
+| `coding.cli` | Command-line entry point |
 
-```
-pi-ai          Low-level LLM streaming (provider-agnostic)
-  |
-pi-agent       Agent loop with tool execution, steering, follow-ups
-  |
-pi-coding-agent / pi-mom / pi-web-ui    Application-level consumers
-  |
-pi-tui         Terminal rendering (used by pi-coding-agent)
-```
+`coding.cli` and `coding.web` wire `coding.core` sessions onto the `coding.agent`
+loop, which streams through `coding.ai`. Each module only depends on the ones
+listed before it in that chain.
 
-Each layer depends only on the one below it. `pi-ai` has zero knowledge of agents or tools beyond what the LLM needs. `pi-agent` has zero knowledge of specific tools -- it receives them as configuration. Applications wire everything together.
+## Tools
+
+`bash`, `read`, `write`, `edit`, `grep`, `find`, `ls`.
+
+High-risk calls can require the user's consent first. With `approvalMode` set to
+`ask`, shell commands, writes outside the workspace, and unrecognized tools ask
+before running; read-only tools never do. A denial comes back to the model as an
+error tool result, so the run continues instead of dying. The web UI renders the
+allow/deny controls on the tool card.
 
 ## Quick start
 
 Requires Python 3.14+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone <repo> && cd pi
+git clone <repo> && cd coding
 uv sync --all-packages
 ```
 
-Run tests across all packages:
+`--all-packages` matters: the workspace root is a virtual project, so a plain
+`uv sync` prunes the package and its dependencies from the environment.
+
+Run the tests:
 
 ```bash
-uv run pytest
+uv run pytest packages/coding/tests
 ```
 
-Run a specific package's tests:
+## Running
+
+CLI, print mode (non-interactive — there is no REPL yet):
 
 ```bash
-uv run pytest packages/pi-ai/tests/ -v
-uv run pytest packages/pi-tui/tests/ -v
+coding "summarise this repository"
 ```
 
-## Development
-
-The workspace is configured in `pyproject.toml`:
-
-```toml
-[tool.uv.workspace]
-members = ["packages/*"]
-```
-
-Packages reference each other as workspace dependencies:
-
-```toml
-# In packages/pi-agent/pyproject.toml
-dependencies = ["pi-ai"]
-
-# In packages/pi-coding-agent/pyproject.toml
-dependencies = ["pi-ai", "pi-agent", "pi-tui"]
-```
-
-Adding a new package:
+Web UI:
 
 ```bash
-mkdir -p packages/pi-foo/src/pi/foo packages/pi-foo/tests
-# Create pyproject.toml, __init__.py
-uv sync --all-packages
+coding-web                      # http://127.0.0.1:8000
 ```
+
+The web UI is bound to loopback on purpose: the tools give it the same
+filesystem access as the CLI, so exposing it must be an explicit `--host`.
+
+## Where state lives
+
+| Path | Contents |
+|------|----------|
+| `~/.coding/settings.json` | Global settings |
+| `<project>/.coding/settings.json` | Project settings, overriding global |
+| `~/.coding/sessions/<encoded-cwd>/` | Session transcripts |
+| `~/.coding/extensions/`, `<project>/.coding/extensions/` | Extensions |
+| `~/.coding/models.json` | Custom model definitions |
+| `~/.coding/web-ui.db` | Web UI sessions, provider keys, approval mode |
+
+API keys are read from the provider's environment variable (`OPENAI_API_KEY`,
+`DEEPSEEK_API_KEY`, `GROQ_API_KEY`, ...) or stored through the web UI settings
+dialog. Custom OpenAI-compatible endpoints fall back to `CODING_API_KEY`.
+
+## Extensions
+
+An extension is a `.py` file (or a package directory) exposing a factory that
+receives the extension API:
+
+```python
+def extension(coding):
+    coding.on("tool_call", block_dangerous_commands)
+```
+
+They are discovered in `~/.coding/extensions/`, then
+`<project>/.coding/extensions/`, then any explicitly configured paths.
 
 ## License
 

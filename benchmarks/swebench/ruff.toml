@@ -1,4 +1,14 @@
-target-version = "py314"
+# These scripts straddle two interpreters, so they target the lower one:
+#
+#   run_agent.py        host,  Python 3.14 (the coding-web venv)
+#   select_instances.py container, Python 3.11 (the harness image)
+#
+# The repo root targets py314, under which the formatter rewrites
+# `except (A, B):` to the PEP 758 paren-free spelling. That is valid on 3.14 and
+# a syntax error on 3.11, so anything that must run in the container has to be
+# checked against py311.
+
+target-version = "py311"
 line-length = 120
 
 [lint]

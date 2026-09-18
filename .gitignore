@@ -9,7 +9,19 @@ build/
 .venv/
 venv/
 .env
+.env.*
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# Command Code local agent state: machine-specific permissions and learned preferences
+.commandcode/
+
+# Project-local agent state: settings, sessions, extension config (may hold API keys)
+.coding/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+
 uv.lock
