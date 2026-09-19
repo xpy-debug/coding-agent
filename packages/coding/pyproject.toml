@@ -17,7 +17,6 @@ dependencies = [
 ]
 
 [project.scripts]
-coding = "coding.cli:main"
 coding-web = "coding.web.main:main"
 
 [build-system]

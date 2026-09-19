@@ -1,6 +1,6 @@
 # coding
 
-一个用 Python 编写的 AI 编程助手（coding agent）：与厂商无关的 LLM 流式输出、带文件与 Shell 工具的有状态 agent 循环、一个 CLI，以及一个浏览器 UI。
+一个用 Python 编写的 AI 编程助手（coding agent）：与厂商无关的 LLM 流式输出、带文件与 Shell 工具的有状态 agent 循环，以及一个浏览器 UI。
 
 重构自原始项目 https://github.com/badlogic/pi-mono。
 
@@ -14,9 +14,8 @@
 | `coding.agent` | 有状态 agent 循环：工具执行、运行中干预、后续消息 |
 | `coding.core` | 编程助手：工具、会话、上下文压缩、扩展、设置、工具审批 |
 | `coding.web` | FastAPI + WebSocket UI，会话由 SQLite 支撑 |
-| `coding.cli` | 命令行入口 |
 
-`coding.cli` 和 `coding.web` 把 `coding.core` 的会话接到 `coding.agent` 循环上，后者通过 `coding.ai` 进行流式输出。每个模块只依赖该链条中排在它之前的模块。
+`coding.web` 把 `coding.core` 的会话接到 `coding.agent` 循环上，后者通过 `coding.ai` 进行流式输出。每个模块只依赖该链条中排在它之前的模块。
 
 ## 工具
 
@@ -43,19 +42,13 @@ uv run pytest packages/coding/tests
 
 ## 运行
 
-CLI，打印模式（非交互式——目前还没有 REPL）：
-
-```bash
-coding "summarise this repository"
-```
-
 Web UI：
 
 ```bash
 coding-web                      # http://127.0.0.1:8000
 ```
 
-Web UI 故意绑定到回环地址：这些工具赋予它的文件系统访问权限与 CLI 相同，因此对外暴露必须显式指定 `--host`。
+Web UI 故意绑定到回环地址：这些工具赋予它的文件系统访问权限与直接在本地运行相同，因此对外暴露必须显式指定 `--host`。
 
 ## 状态存放位置
 
