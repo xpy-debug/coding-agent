@@ -1,99 +1,86 @@
 # coding
 
-An AI coding agent written in Python: provider-agnostic LLM streaming, a stateful
-agent loop with file and shell tools, a CLI, and a browser UI.
+一个用 Python 编写的 AI 编程助手（coding agent）：与厂商无关的 LLM 流式输出、带文件与 Shell 工具的有状态 agent 循环、一个 CLI，以及一个浏览器 UI。
 
-Restructured from the original project at https://github.com/badlogic/pi-mono.
+重构自原始项目 https://github.com/badlogic/pi-mono。
 
-## Layout
+## 项目结构
 
-A single package, `packages/coding`, published as a `uv` workspace member.
+单一包 `packages/coding`，作为 `uv` workspace 成员发布。
 
-| Module | What it does |
-|--------|--------------|
-| `coding.ai` | LLM streaming over OpenAI-compatible APIs, plus vendor presets and environment key lookup |
-| `coding.agent` | Stateful agent loop: tool execution, mid-run steering, follow-up messages |
-| `coding.core` | Coding agent: tools, sessions, context compaction, extensions, settings, tool approval |
-| `coding.web` | FastAPI + WebSocket UI with SQLite-backed sessions |
-| `coding.cli` | Command-line entry point |
+| 模块 | 作用 |
+|------|------|
+| `coding.ai` | 基于 OpenAI 兼容 API 的 LLM 流式输出，以及厂商预设和环境变量密钥查找 |
+| `coding.agent` | 有状态 agent 循环：工具执行、运行中干预、后续消息 |
+| `coding.core` | 编程助手：工具、会话、上下文压缩、扩展、设置、工具审批 |
+| `coding.web` | FastAPI + WebSocket UI，会话由 SQLite 支撑 |
+| `coding.cli` | 命令行入口 |
 
-`coding.cli` and `coding.web` wire `coding.core` sessions onto the `coding.agent`
-loop, which streams through `coding.ai`. Each module only depends on the ones
-listed before it in that chain.
+`coding.cli` 和 `coding.web` 把 `coding.core` 的会话接到 `coding.agent` 循环上，后者通过 `coding.ai` 进行流式输出。每个模块只依赖该链条中排在它之前的模块。
 
-## Tools
+## 工具
 
-`bash`, `read`, `write`, `edit`, `grep`, `find`, `ls`.
+`bash`、`read`、`write`、`edit`、`grep`、`find`、`ls`。
 
-High-risk calls can require the user's consent first. With `approvalMode` set to
-`ask`, shell commands, writes outside the workspace, and unrecognized tools ask
-before running; read-only tools never do. A denial comes back to the model as an
-error tool result, so the run continues instead of dying. The web UI renders the
-allow/deny controls on the tool card.
+高风险调用可以先征得用户同意。当 `approvalMode` 设为 `ask` 时，Shell 命令、工作区外的写入以及未识别的工具会在运行前询问；只读工具则永不询问。拒绝会作为错误工具结果返回给模型，因此运行会继续而不是中断。Web UI 会在工具卡片上渲染允许/拒绝控件。
 
-## Quick start
+## 快速开始
 
-Requires Python 3.14+ and [uv](https://docs.astral.sh/uv/).
+需要 Python 3.14+ 和 [uv](https://docs.astral.sh/uv/)。
 
 ```bash
 git clone <repo> && cd coding
 uv sync --all-packages
 ```
 
-`--all-packages` matters: the workspace root is a virtual project, so a plain
-`uv sync` prunes the package and its dependencies from the environment.
+`--all-packages` 很重要：workspace 根目录是一个虚拟项目，因此单纯的 `uv sync` 会把该包及其依赖从环境中清除掉。
 
-Run the tests:
+运行测试：
 
 ```bash
 uv run pytest packages/coding/tests
 ```
 
-## Running
+## 运行
 
-CLI, print mode (non-interactive — there is no REPL yet):
+CLI，打印模式（非交互式——目前还没有 REPL）：
 
 ```bash
 coding "summarise this repository"
 ```
 
-Web UI:
+Web UI：
 
 ```bash
 coding-web                      # http://127.0.0.1:8000
 ```
 
-The web UI is bound to loopback on purpose: the tools give it the same
-filesystem access as the CLI, so exposing it must be an explicit `--host`.
+Web UI 故意绑定到回环地址：这些工具赋予它的文件系统访问权限与 CLI 相同，因此对外暴露必须显式指定 `--host`。
 
-## Where state lives
+## 状态存放位置
 
-| Path | Contents |
-|------|----------|
-| `~/.coding/settings.json` | Global settings |
-| `<project>/.coding/settings.json` | Project settings, overriding global |
-| `~/.coding/sessions/<encoded-cwd>/` | Session transcripts |
-| `~/.coding/extensions/`, `<project>/.coding/extensions/` | Extensions |
-| `~/.coding/models.json` | Custom model definitions |
-| `~/.coding/web-ui.db` | Web UI sessions, provider keys, approval mode |
+| 路径 | 内容 |
+|------|------|
+| `~/.coding/settings.json` | 全局设置 |
+| `<project>/.coding/settings.json` | 项目设置，覆盖全局设置 |
+| `~/.coding/sessions/<encoded-cwd>/` | 会话记录 |
+| `~/.coding/extensions/`、`<project>/.coding/extensions/` | 扩展 |
+| `~/.coding/models.json` | 自定义模型定义 |
+| `~/.coding/web-ui.db` | Web UI 会话、厂商密钥、审批模式 |
 
-API keys are read from the provider's environment variable (`OPENAI_API_KEY`,
-`DEEPSEEK_API_KEY`, `GROQ_API_KEY`, ...) or stored through the web UI settings
-dialog. Custom OpenAI-compatible endpoints fall back to `CODING_API_KEY`.
+API 密钥从厂商对应的环境变量读取（`OPENAI_API_KEY`、`DEEPSEEK_API_KEY`、`GROQ_API_KEY` 等），或通过 Web UI 的设置对话框存储。自定义的 OpenAI 兼容端点回退到 `CODING_API_KEY`。
 
-## Extensions
+## 扩展
 
-An extension is a `.py` file (or a package directory) exposing a factory that
-receives the extension API:
+扩展是一个 `.py` 文件（或一个包目录），暴露一个接收扩展 API 的工厂函数：
 
 ```python
 def extension(coding):
     coding.on("tool_call", block_dangerous_commands)
 ```
 
-They are discovered in `~/.coding/extensions/`, then
-`<project>/.coding/extensions/`, then any explicitly configured paths.
+它们的发现顺序为 `~/.coding/extensions/`，然后是 `<project>/.coding/extensions/`，最后是任何显式配置的路径。
 
-## License
+## 许可证
 
-MIT License. Copyright (c) Vamsi Kurama.
+MIT License。Copyright (c) Vamsi Kurama.
