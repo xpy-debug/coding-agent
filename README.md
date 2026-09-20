@@ -1,6 +1,6 @@
-# coding
+# coding agent
 
-一个用 Python 编写的 AI 编程助手（coding agent）：与厂商无关的 LLM 流式输出、带文件与 Shell 工具的有状态 agent 循环，以及一个浏览器 UI。
+一个用 Python 编写的 AI 编程助手（coding agent）：与厂商无关的 LLM 流式输出、带文件与 Shell 工具的有状态 agent 循环，以及一个浏览器 UI,根据SWE-bench Lite构建回归测试集（评测集选择中低难度评测样例）。
 
 
 ## 项目结构
@@ -62,17 +62,28 @@ Web UI 故意绑定到回环地址：这些工具赋予它的文件系统访问�
 
 API 密钥从厂商对应的环境变量读取（`OPENAI_API_KEY`、`DEEPSEEK_API_KEY`、`GROQ_API_KEY` 等），或通过 Web UI 的设置对话框存储。自定义的 OpenAI 兼容端点回退到 `CODING_API_KEY`。
 
-## 扩展
+## 回归测试集与消融实验
 
-扩展是一个 `.py` 文件（或一个包目录），暴露一个接收扩展 API 的工厂函数：
+### 回归测试集
 
-```python
-def extension(coding):
-    coding.on("tool_call", block_dangerous_commands)
-```
+基于 SWE-bench Lite 选取 100 道评测样例构建回归评测集，以中低难度样例为主，用于验证 agent 在真实代码修复任务上的基础能力，以及版本迭代过程中的性能回归情况。
 
-它们的发现顺序为 `~/.coding/extensions/`，然后是 `<project>/.coding/extensions/`，最后是任何显式配置的路径。
+### 消融实验：上下文模块
 
-## 许可证
+针对上下文记忆压缩与摘要模块设计消融对比实验，设置两组对照：
 
-MIT License。Copyright (c) Vamsi Kurama.
+- **当前版本**：启用记忆压缩与摘要的完整版本
+- **无压缩版本**：移除记忆压缩与摘要模块，保留原始完整上下文
+
+两组分别在同一回归评测集上各运行 2 遍，取平均值进行对比，评估维度如下：
+
+| 评估维度 | 说明 |
+|---------|------|
+| 评测得分 | SWE-bench 任务解决率 |
+| Token 消耗 | 单次任务平均 token 用量 |
+| 运行时间 | 单次任务平均耗时 |
+
+> **当前状态**：实验仍在进行中，已完成少量样例的初步运行，完整 100 道评测集尚未全部跑完，后续将补充完整数据与对比结论。
+
+
+
