@@ -2,7 +2,6 @@
 
 一个用 Python 编写的 AI 编程助手（coding agent）：与厂商无关的 LLM 流式输出、带文件与 Shell 工具的有状态 agent 循环，以及一个浏览器 UI。
 
-重构自原始项目 https://github.com/badlogic/pi-mono。
 
 ## 项目结构
 
